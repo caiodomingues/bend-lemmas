@@ -3,3 +3,5 @@ import Base
 import ./nat.bend as N
 import ./list.bend as L
 import ./bool.bend as B
+import ./string.bend as S
+# map.bend is left out: its general laws are open claims, see the file
