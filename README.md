@@ -28,13 +28,23 @@ function and its result is a proof. `bend all.bend` checks the whole library.
 | `add_succ(x, -y)` | `Nat.add(x, 1n+y) == 1n+Nat.add(x, y)` |
 | `add_comm(x, y)` | `Nat.add(x, y) == Nat.add(y, x)` |
 | `add_assoc(x, -y, -z)` | `Nat.add(x, Nat.add(y, z)) == Nat.add(Nat.add(x, y), z)` |
+| `add_left_comm(x, y, z)` | `Nat.add(x, Nat.add(y, z)) == Nat.add(y, Nat.add(x, z))` |
+| `add_swap(a, b, c, d)` | `Nat.add(Nat.add(a, b), Nat.add(c, d)) == Nat.add(Nat.add(a, c), Nat.add(b, d))` |
+| `sub_zero(x)`, `sub_self(x)` | `Nat.sub(x, 0n) == x`, `Nat.sub(x, x) == 0n` |
+| `add_sub(x, y)` | `Nat.sub(Nat.add(x, y), y) == x` |
 | `mul_zero(x)` | `Nat.mul(x, 0n) == 0n` |
 | `mul_one(x)` | `Nat.mul(x, 1n) == x` |
+| `mul_succ(x, y)` | `Nat.mul(x, 1n+y) == Nat.add(x, Nat.mul(x, y))` |
+| `mul_comm(x, y)` | `Nat.mul(x, y) == Nat.mul(y, x)` |
+| `mul_add(x, y, z)` | `Nat.mul(x, Nat.add(y, z)) == Nat.add(Nat.mul(x, y), Nat.mul(x, z))` |
 | `LE(a, b)` | the type of proofs of `a <= b` (`Unit` or `Empty`) |
 | `le_refl(x)` | `LE(x, x)` |
 | `le_succ(x)` | `LE(x, 1n+x)` |
 | `le_trans(x, y, z, xy, yz)` | `LE(x, z)` |
 | `le_case(x, y)` | `Or(LE(x, y), LE(y, x))`: a comparison that returns its evidence |
+| `cmp_refl(x)` | `Nat.cmp(x, x) == EQ{}` |
+| `is_le_of_le(x, y, e)` | `LE(x, y)` gives `Nat.is_le(x, y) == True{}` |
+| `le_of_is_le(x, y, e)` | `Nat.is_le(x, y) == True{}` gives `LE(x, y)`: a program's check feeds a proof |
 
 | `list.bend` (generic in the element kind) | claim |
 | --- | --- |
@@ -45,11 +55,44 @@ function and its result is a proof. `bend all.bend` checks the whole library.
 | `rev_acc(a, A, xs, acc)` | `append(reverse(xs), acc) == reverse.go(xs, acc)` |
 | `rev_rev_go(a, A, xs, acc)` | `reverse(reverse.go(xs, acc)) == reverse.go(acc, xs)` |
 | `rev_rev(a, A, xs)` | `reverse(reverse(xs)) == xs` |
+| `length_take_le(a, A, xs, n)` | `LE(length(take(xs, n)), n)` |
+| `length_zip_le(a, A, b, B, xs, ys)` | `LE(length(zip(xs, ys)), length(xs))` |
 
 | `list.bend` (Data elements, `&2`) | claim |
 | --- | --- |
 | `length_rev_go(A, xs, acc)` | `length(reverse.go(xs, acc)) == Nat.add(length(xs), length(acc))` |
 | `length_reverse(A, xs)` | `length(reverse(xs)) == length(xs)` |
+| `take_drop(A, xs, n)` | `append(take(xs, n), drop(xs, n)) == xs` |
+| `length_replicate(A, n, x)` | `length(replicate(n, x)) == n` |
+| `length_range_go(n, acc)`, `length_range(n)` | `length(range(n)) == n` |
+
+| `list.bend` (Nat lists) | claim |
+| --- | --- |
+| `In(x, xs)` | the type of proofs that `x` is in `xs` |
+| `in_append_l(x, xs, ys, e)`, `in_append_r(x, xs, ys, e)` | membership survives `append`, from either side |
+| `count(x, xs)`, `bump(b, n)` | occurrences of `x`, as in `demos/proof_insertion_sort` |
+| `count_append(x, xs, ys)` | `count(x, append(xs, ys)) == Nat.add(count(x, xs), count(x, ys))` |
+| `bump_add(b, n, m)`, `bump_swap(a, b, n)` | `bump` moves through `add` and commutes with itself |
+| `Perm(xs, ys)` | `@x: Nat -> {count(x, xs) == count(x, ys)}`: a permutation, by counts |
+| `perm_refl`, `perm_sym`, `perm_trans` | an equivalence |
+| `perm_swap(a, b, t)`, `perm_cons(h, xs, ys, p)` | `a <> b <> t ~ b <> a <> t`; a shared head keeps a permutation |
+
+| `string.bend` | claim |
+| --- | --- |
+| `append_nil(s)`, `append_assoc(a, b, c)`, `concat_assoc(a, b, c)` | as for lists; `++` is `String.append` |
+| `length_append(a, b)` | `String.length(a ++ b) == Nat.add(String.length(a), String.length(b))` |
+| `bool_cmp_refl`, `word_cmp_refl(n, w)`, `u32_cmp_refl(x)`, `char_cmp_refl(c)` | a value compares `EQ{}` with itself, from the bits up |
+| `cmp_refl(s)` | `String.cmp(s, s) == ((s, s), EQ{})` |
+
+| `map.bend` (not in `all.bend`) | claim |
+| --- | --- |
+| `get_set_empty(V, d, k, v)` | `Map.get(d, Map.set(MTip{}, k, v), k) == (MLeaf{k, v}, v)` |
+| `get_set` | **open**: `Map.get` after `Map.set` answers the value, on any map |
+| `get_set_other` | **open**: `Map.set` leaves other keys alone |
+
+The two open laws need a well-formedness predicate on the trie, its
+preservation by `set`, and that `get` follows the bits `set` did through
+`Map.bit`. `bend map.bend` reports them as TODOs by design.
 
 | `bool.bend` | claim |
 | --- | --- |
@@ -85,8 +128,17 @@ of every lemma here; follow them to add one.
   `Empty`; `le_case` answers `Or(LE(x, y), LE(y, x))`, so a proof can branch
   on the comparison the program made (the pattern of `demos/proof_insertion_sort`).
 
+## Example
+
+`examples/deque/` is a double-ended queue whose five laws are proven with
+this library: its `PROOF.bend` went from 106 lines with four local lemmas to
+69 importing `list.bend`. It is also the drift check: `bend examples/deque/PROOF.bend`
+fails if a lemma here changes shape.
+
 ## Run
 
-    bend all.bend      # All terms check.
+    bend all.bend                    # All terms check.
+    bend examples/deque/PROOF.bend   # All terms check.
+    bend map.bend                    # Error: 2 TODOs found (the open laws)
 
 On Windows, `bun <bend checkout>/bend2/main.ts all.bend` does the same natively.
