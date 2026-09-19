@@ -18,7 +18,7 @@ def add_zero(+x: Nat) -> {Nat.add(x, 0n) == x : Nat}:
       %add_zero(p) : {1n+Nat.add(p, 0n) == 1n+_ : Nat}
       {==}
 
-def add_succ(+x: Nat, +y: Nat) -> {Nat.add(x, 1n+y) == 1n+Nat.add(x, y) : Nat}:
+def add_succ(+x: Nat, -y: Nat) -> {Nat.add(x, 1n+y) == 1n+Nat.add(x, y) : Nat}:
   match x:
     case 0n:
       {==}
@@ -36,7 +36,7 @@ def add_comm(+x: Nat, +y: Nat) -> {Nat.add(x, y) == Nat.add(y, x) : Nat}:
       %add_comm(p, y) : {1n+Nat.add(p, y) == 1n+_ : Nat}
       {==}
 
-def add_assoc(+x: Nat, +y: Nat, +z: Nat) -> {Nat.add(x, Nat.add(y, z)) == Nat.add(Nat.add(x, y), z) : Nat}:
+def add_assoc(+x: Nat, -y: Nat, -z: Nat) -> {Nat.add(x, Nat.add(y, z)) == Nat.add(Nat.add(x, y), z) : Nat}:
   match x:
     case 0n:
       {==}
@@ -52,8 +52,7 @@ def mul_zero(+x: Nat) -> {Nat.mul(x, 0n) == 0n : Nat}:
     case 0n:
       {==}
     case 1n+p:
-      %mul_zero(p) : {Nat.mul(p, 0n) == _ : Nat}
-      {==}
+      mul_zero(p)
 
 def mul_one(+x: Nat) -> {Nat.mul(x, 1n) == x : Nat}:
   match x:
@@ -78,14 +77,22 @@ def LE(a: Nat, b: Nat) -> Data:
     case 1n+a1 1n+b1:
       LE(a1, b1)
 
-def le_refl(+x: Nat) -> LE(x, x):
+def le_refl(x: Nat) -> LE(x, x):
   match x:
     case 0n:
       Unit{}
     case 1n+p:
       le_refl(p)
 
-def le_trans(+x: Nat, +y: Nat, +z: Nat, xy: LE(x, y), yz: LE(y, z)) -> LE(x, z):
+def le_succ(x: Nat) -> LE(x, 1n+x):
+  match x:
+    case 0n:
+      Unit{}
+    case 1n+p:
+      le_succ(p)
+
+
+def le_trans(x: Nat, y: Nat, z: Nat, xy: LE(x, y), yz: LE(y, z)) -> LE(x, z):
   match x y z:
     case 0n b c:
       Unit{}
@@ -96,16 +103,9 @@ def le_trans(+x: Nat, +y: Nat, +z: Nat, xy: LE(x, y), yz: LE(y, z)) -> LE(x, z):
     case 1n+a 1n+b 1n+c:
       le_trans(a, b, c, xy, yz)
 
-def le_succ(+x: Nat) -> LE(x, 1n+x):
-  match x:
-    case 0n:
-      Unit{}
-    case 1n+p:
-      le_succ(p)
-
 # the decider: a comparison that returns its evidence, so a proof can
 # branch on the fact the program did
-def le_case(+x: Nat, +y: Nat) -> Or(LE(x, y), LE(y, x)):
+def le_case(x: Nat, y: Nat) -> Or(LE(x, y), LE(y, x)):
   match x y:
     case 0n b:
       Inl{Unit{}}

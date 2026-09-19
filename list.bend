@@ -73,7 +73,7 @@ def rev_rev(a, -A: Kind(a), xs: List<a, A>) -> {List.reverse(a, A, List.reverse(
 # so it is stated for Data lists (&2), whose +xs may be used twice.
 # reverse.go's length is both lengths added, and add_succ moves the
 # accumulator's cons out to the front
-def length_rev_go(-A: Data, +xs: List<&2, A>, +acc: List<&2, A>)
+def length_rev_go(-A: Data, +xs: List<&2, A>, -acc: List<&2, A>)
   -> {List.length(&2, A, List.reverse.go(&2, A, xs, acc)) == Nat.add(List.length(&2, A, xs), List.length(&2, A, acc)) : Nat}:
   match xs:
     case Nil{}:

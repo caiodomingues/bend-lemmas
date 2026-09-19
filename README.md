@@ -1,8 +1,9 @@
 # bend-lemmas
 
 Proven lemmas for [Bend](https://bend-lang.com) 2: the facts about `Nat`,
-`List` and `Bool` that every `PROOF.bend` ends up re-proving. Base ships six
-(`Equal.cong`, `Equal.sym`, `Equal.trans` and the primitives); this is the rest.
+`List` and `Bool` that every `PROOF.bend` ends up re-proving. Base ships
+`Equal.cong`, `Equal.sym`, `Equal.trans`, `Word.add_comm` and `U32.add_comm`;
+this is the rest.
 
 ```python
 import Base
@@ -24,9 +25,9 @@ function and its result is a proof. `bend all.bend` checks the whole library.
 | `nat.bend` | claim |
 | --- | --- |
 | `add_zero(x)` | `Nat.add(x, 0n) == x` |
-| `add_succ(x, y)` | `Nat.add(x, 1n+y) == 1n+Nat.add(x, y)` |
+| `add_succ(x, -y)` | `Nat.add(x, 1n+y) == 1n+Nat.add(x, y)` |
 | `add_comm(x, y)` | `Nat.add(x, y) == Nat.add(y, x)` |
-| `add_assoc(x, y, z)` | `Nat.add(x, Nat.add(y, z)) == Nat.add(Nat.add(x, y), z)` |
+| `add_assoc(x, -y, -z)` | `Nat.add(x, Nat.add(y, z)) == Nat.add(Nat.add(x, y), z)` |
 | `mul_zero(x)` | `Nat.mul(x, 0n) == 0n` |
 | `mul_one(x)` | `Nat.mul(x, 1n) == x` |
 | `LE(a, b)` | the type of proofs of `a <= b` (`Unit` or `Empty`) |
@@ -57,6 +58,7 @@ function and its result is a proof. `bend all.bend` checks the whole library.
 | `and_comm(a, b)`, `or_comm(a, b)` | commutativity |
 | `and_assoc(a, b, c)`, `or_assoc(a, b, c)` | associativity |
 | `not_and(a, b)`, `not_or(a, b)` | de Morgan |
+| `xor_false(b)`, `xor_true(b)`, `xor_comm(a, b)` | xor's unit, its negation and commutativity |
 
 ## How the lemmas are shaped
 
@@ -71,8 +73,11 @@ of every lemma here; follow them to add one.
   hypothesis *is* the goal, generalizing the accumulator (`rev_rev_go`). A
   claim that needs two lemmas on the same list is stated for Data lists
   (`-A: Data`, `+xs: List<&2, A>`), which may be used freely (`length_reverse`).
-- **An erased parameter cannot be matched.** The induction variable is live
-  and comes first, so the termination check sees it shrink.
+- **An erased parameter cannot be matched.** The induction variable is the
+  first live parameter (erased ones like `a, -A` may precede it), so the
+  termination check, which reads live arguments left to right, sees it shrink.
+  A parameter that only reaches the type and the recursive call is erased
+  (`add_succ(x, -y)`), so passing it costs the caller no live use.
 - **No lemmas about `List.map`, `List.filter` or the folds.** They are
   templates, and a law cannot quantify over a template argument ("a def
   parameter is not comptime"). Prove such facts per concrete function.
