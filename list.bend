@@ -232,3 +232,89 @@ def perm_cons(-h: Nat, -xs: List<&2, Nat>, -ys: List<&2, Nat>, p: Perm(xs, ys)) 
   +x =>
     %p(x) : {bump(Cmp.is_eq(Nat.cmp(x, h)), count(x, xs)) == bump(Cmp.is_eq(Nat.cmp(x, h)), _) : Nat}
     {==}
+
+def map_identity(~A: Type, xs: List<A>)
+  -> {List.map(~A, ~A, ~(x => x), xs) == xs : List<A>}:
+  match xs:
+    case Nil{}:
+      {==}
+    case h <> t:
+      %map_identity(~A, t) : {h <> List.map(~A, ~A, ~(x => x), t) == h <> _ : List<A>}
+      {==}
+
+def length_map(~A: Type, ~B: Type, ~f: A -> B, xs: List<A>)
+  -> {List.length(&1, B, List.map(~A, ~B, ~f, xs)) == List.length(&1, A, xs) : Nat}:
+  match xs:
+    case Nil{}:
+      {==}
+    case h <> t:
+      %length_map(~A, ~B, ~f, t) : {1n+List.length(&1, B, List.map(~A, ~B, ~f, t)) == 1n+_ : Nat}
+      {==}
+
+def map_append(~A: Type, ~B: Type, ~f: A -> B, xs: List<A>, -ys: List<A>)
+  -> {List.map(~A, ~B, ~f, List.append(&1, A, xs, ys)) == List.append(&1, B, List.map(~A, ~B, ~f, xs), List.map(~A, ~B, ~f, ys)) : List<B>}:
+  match xs:
+    case Nil{}:
+      {==}
+    case h <> t:
+      %map_append(~A, ~B, ~f, t, ys) : {f(h) <> List.map(~A, ~B, ~f, List.append(&1, A, t, ys)) == f(h) <> _ : List<B>}
+      {==}
+
+def map_compose(~A: Type, ~B: Type, ~C: Type, ~f: A -> B, ~g: B -> C, xs: List<A>)
+  -> {List.map(~B, ~C, ~g, List.map(~A, ~B, ~f, xs)) == List.map(~A, ~C, ~(x => g(f(x))), xs) : List<C>}:
+  match xs:
+    case Nil{}:
+      {==}
+    case h <> t:
+      %map_compose(~A, ~B, ~C, ~f, ~g, t) : {g(f(h)) <> List.map(~B, ~C, ~g, List.map(~A, ~B, ~f, t)) == g(f(h)) <> _ : List<C>}
+      {==}
+
+def filter_put_append(-A: Data, -h: A, -xs: List<&2, A>, -ys: List<&2, A>, keep: Bool)
+  -> {List.filter.put(A, h, List.append(&2, A, xs, ys), keep) == List.append(&2, A, List.filter.put(A, h, xs, keep), ys) : List<&2, A>}:
+  match keep:
+    case False{}:
+      {==}
+    case True{}:
+      {==}
+
+def filter_append(~A: Data, ~f: A -> Bool, xs: List<&2, A>, -ys: List<&2, A>)
+  -> {List.filter(~A, ~f, List.append(&2, A, xs, ys)) == List.append(&2, A, List.filter(~A, ~f, xs), List.filter(~A, ~f, ys)) : List<&2, A>}:
+  match xs:
+    case Nil{}:
+      {==}
+    case +h <> +t:
+      %Equal.sym(List<&2, A>, List.filter(~A, ~f, List.append(&2, A, t, ys)), List.append(&2, A, List.filter(~A, ~f, t), List.filter(~A, ~f, ys)), filter_append(~A, ~f, t, ys)) : {List.filter.put(A, h, _, f(h)) == List.append(&2, A, List.filter.put(A, h, List.filter(~A, ~f, t), f(h)), List.filter(~A, ~f, ys)) : List<&2, A>}
+      filter_put_append(A, h, List.filter(~A, ~f, t), List.filter(~A, ~f, ys), f(h))
+
+def length_filter_put_le(-A: Data, -h: A, +xs: List<&2, A>, +n: Nat, keep: Bool, e: N.LE(List.length(&2, A, xs), n))
+  -> N.LE(List.length(&2, A, List.filter.put(A, h, xs, keep)), 1n+n):
+  match keep:
+    case False{}:
+      N.le_trans(List.length(&2, A, xs), n, 1n+n, e, N.le_succ(n))
+    case True{}:
+      e
+
+def length_filter_le(~A: Data, ~f: A -> Bool, +xs: List<&2, A>)
+  -> N.LE(List.length(&2, A, List.filter(~A, ~f, xs)), List.length(&2, A, xs)):
+  match xs:
+    case Nil{}:
+      Unit{}
+    case h <> t:
+      length_filter_put_le(A, h, List.filter(~A, ~f, t), List.length(&2, A, t), f(h), length_filter_le(~A, ~f, t))
+
+def foldl_append(~a: Quant, ~A: Kind(a), ~B: Type, ~f: B -> A -> B, xs: List<a, A>, -ys: List<a, A>, -acc: B)
+  -> {List.foldl(~a, ~A, ~B, ~f, List.append(a, A, xs, ys), acc) == List.foldl(~a, ~A, ~B, ~f, ys, List.foldl(~a, ~A, ~B, ~f, xs, acc)) : B}:
+  match xs:
+    case Nil{}:
+      {==}
+    case h <> t:
+      foldl_append(~a, ~A, ~B, ~f, t, ys, f(acc, h))
+
+def foldr_append(~a: Quant, ~A: Kind(a), ~B: Type, ~f: A -> B -> B, xs: List<a, A>, -ys: List<a, A>, -z: B)
+  -> {List.foldr(~a, ~A, ~B, ~f, List.append(a, A, xs, ys), z) == List.foldr(~a, ~A, ~B, ~f, xs, List.foldr(~a, ~A, ~B, ~f, ys, z)) : B}:
+  match xs:
+    case Nil{}:
+      {==}
+    case h <> t:
+      %foldr_append(~a, ~A, ~B, ~f, t, ys, z) : {f(h, List.foldr(~a, ~A, ~B, ~f, List.append(a, A, t, ys), z)) == f(h, _) : B}
+      {==}

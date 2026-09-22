@@ -77,6 +77,26 @@ function and its result is a proof. `bend all.bend` checks the whole library.
 | `perm_refl`, `perm_sym`, `perm_trans` | an equivalence |
 | `perm_swap(a, b, t)`, `perm_cons(h, xs, ys, p)` | `a <> b <> t ~ b <> a <> t`; a shared head keeps a permutation |
 
+| `list.bend` (compile-time functions) | claim |
+| --- | --- |
+| `map_identity(~A, xs)` | `map(identity, xs) == xs` |
+| `length_map(~A, ~B, ~f, xs)` | mapping preserves length |
+| `map_append(~A, ~B, ~f, xs, ys)` | mapping an append equals appending the mapped lists |
+| `map_compose(~A, ~B, ~C, ~f, ~g, xs)` | mapping `f` then `g` equals one map of `g(f(x))` |
+| `filter_append(~A, ~f, xs, ys)` | filtering an append equals appending the filtered lists |
+| `length_filter_le(~A, ~f, xs)` | `LE(length(filter(f, xs)), length(xs))` |
+| `foldl_append(~a, ~A, ~B, ~f, xs, ys, acc)` | fold the append, or fold `xs` and resume with `ys` |
+| `foldr_append(~a, ~A, ~B, ~f, xs, ys, z)` | fold the append, or fold `ys` into the initial value for `xs` |
+
+Map lemmas accept affine elements (`Type`), including closures and arrays.
+Filter follows Base and requires `Data`; folds accept either element kind
+and an affine accumulator. `filter_put_append` and `length_filter_put_le`
+are the case-splitting helpers for Base's `List.filter.put`.
+
+The fold laws preserve evaluation order and require no associativity.
+They justify resuming a stream across chunks; reducing chunks independently
+and combining their results needs additional algebraic laws.
+
 | `string.bend` | claim |
 | --- | --- |
 | `append_nil(s)`, `append_assoc(a, b, c)`, `concat_assoc(a, b, c)` | as for lists; `++` is `String.append` |
@@ -121,9 +141,11 @@ of every lemma here; follow them to add one.
   termination check, which reads live arguments left to right, sees it shrink.
   A parameter that only reaches the type and the recursive call is erased
   (`add_succ(x, -y)`), so passing it costs the caller no live use.
-- **No lemmas about `List.map`, `List.filter` or the folds.** They are
-  templates, and a law cannot quantify over a template argument ("a def
-  parameter is not comptime"). Prove such facts per concrete function.
+- **Template lemmas quantify over compile-time functions.** Put `~A`, `~f`
+  and other template parameters first, and forward them with `~` to Base
+  and recursive proof calls. The checker proves the generic body; callers
+  supply closed functions, not closures over runtime variables. These
+  lemmas are verified with Bend 2.0.23, without `@unsafe` or foreign defs.
 - **Predicates are types, deciders return evidence.** `LE(a, b)` is `Unit` or
   `Empty`; `le_case` answers `Or(LE(x, y), LE(y, x))`, so a proof can branch
   on the comparison the program made (the pattern of `demos/proof_insertion_sort`).
@@ -135,10 +157,31 @@ this library: its `PROOF.bend` went from 106 lines with four local lemmas to
 69 importing `list.bend`. It is also the drift check: `bend examples/deque/PROOF.bend`
 fails if a lemma here changes shape.
 
+`examples/chunks/` maps two chunks in parallel and appends their results.
+Its laws prove that this agrees with mapping the concatenated input, and
+that fusing two maps preserves the result. A decimal accumulator also
+demonstrates resuming a left fold: `[1, 2]` followed by `[3, 4]` gives
+`1234`, so reversing the chunks changes the result. `PROOF.bend` applies
+the generic lemmas directly to these implementations.
+
+`tests/templates.bend` checks imported template instances with affine
+closures as elements, intermediate values and accumulators, plus a
+`Data`-kinded fold and a filter predicate that can accept or reject.
+
 ## Run
 
     bend all.bend                    # All terms check.
     bend examples/deque/PROOF.bend   # All terms check.
+    bend tests/templates.bend --check-only
+    bend examples/chunks/PROOF.bend --check-only
+    bend examples/chunks/main.bend  # [6, 9, 12, 15, 1234]
+    bend examples/chunks/main.bend -o /tmp/bend-chunks
+    /tmp/bend-chunks
     bend map.bend                    # Error: 2 TODOs found (the open laws)
 
-On Windows, `bun <bend checkout>/bend2/main.ts all.bend` does the same natively.
+On Windows, run these commands in WSL with Bend installed. Checking proofs
+needs no GPU or CUDA Toolkit. `bun <bend checkout>/bend2/main.ts all.bend`
+also checks the library natively when a compiler checkout is available.
+
+There is no separate linter configured; `bend --check-only` checks syntax
+and types, and `git diff --check` checks whitespace before committing.
