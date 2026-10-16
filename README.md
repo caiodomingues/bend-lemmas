@@ -145,7 +145,7 @@ of every lemma here; follow them to add one.
   and other template parameters first, and forward them with `~` to Base
   and recursive proof calls. The checker proves the generic body; callers
   supply closed functions, not closures over runtime variables. These
-  lemmas are verified with Bend 2.0.23, without `@unsafe` or foreign defs.
+  lemmas are verified with Bend 2.0.37, without `@unsafe` or foreign defs.
 - **Predicates are types, deciders return evidence.** `LE(a, b)` is `Unit` or
   `Empty`; `le_case` answers `Or(LE(x, y), LE(y, x))`, so a proof can branch
   on the comparison the program made (the pattern of `demos/proof_insertion_sort`).
@@ -170,18 +170,23 @@ closures as elements, intermediate values and accumulators, plus a
 
 ## Run
 
-    bend all.bend                    # All terms check.
-    bend examples/deque/PROOF.bend   # All terms check.
+Verified with Bend 2.0.37 (`bend version`).
+
+    bend all.bend                    # ALL PROOFS CHECK
+    bend examples/deque/PROOF.bend   # ALL PROOFS CHECK
     bend tests/templates.bend --check-only
     bend examples/chunks/PROOF.bend --check-only
     bend examples/chunks/main.bend  # [6, 9, 12, 15, 1234]
     bend examples/chunks/main.bend -o /tmp/bend-chunks
     /tmp/bend-chunks
-    bend map.bend                    # Error: 2 TODOs found (the open laws)
+    bend map.bend                    # SOME PROOFS FAIL: 2 TODOs (the open laws)
+    bend examples/deque/LAWS.bend    # SOME PROOFS FAIL: 5 TODOs (statements only)
+    bend examples/chunks/LAWS.bend   # SOME PROOFS FAIL: 3 TODOs (statements only)
 
 On Windows, run these commands in WSL with Bend installed. Checking proofs
 needs no GPU or CUDA Toolkit. `bun <bend checkout>/bend2/main.ts all.bend`
-also checks the library natively when a compiler checkout is available.
+also checks the library from a compiler checkout; that route is untested
+with 2.0.37.
 
 There is no separate linter configured; `bend --check-only` checks syntax
 and types, and `git diff --check` checks whitespace before committing.
